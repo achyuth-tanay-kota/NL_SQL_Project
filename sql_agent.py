@@ -10,7 +10,9 @@ from langchain_core.messages import SystemMessage, HumanMessage, AnyMessage, AIM
 from langgraph.checkpoint.memory import InMemorySaver
 from typing import Literal
 import re
+import sqlite3
 from dotenv import load_dotenv
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 import config
 import utilities
@@ -23,6 +25,8 @@ load_dotenv()
 sql_llm = ChatOpenAI(model=config.CHAT_OPENAI_MODEL_NAME)
 tools = [get_canonical_line_items]
 sql_llm_with_tools = sql_llm.bind_tools(tools)
+checkpoint_conn = sqlite3.connect(config.checkpoint_db_path, check_same_thread=False)
+checkpointer = SqliteSaver(checkpoint_conn)
 AnalystState = pydantic_models.AnalystState
 
 #Nodes definitions
@@ -30,8 +34,8 @@ def initial_reasoner(state:AnalystState):
     db_schema = open(config.DB_SCHEMA_PATH, 'r').read()
     initial_reasoner_prompt = SystemMessage(prompts.initial_reasoner_prompt.format_map({'user_input':state.user_question, 'schema':db_schema}))
     structured_llm = sql_llm.with_structured_output(pydantic_models.ReasonerOutput)
-    response = structured_llm.invoke([initial_reasoner_prompt])
-    # print('initial_reasoner type:',response.query_type, 'initial_reasoner response:',response.response)
+    response = structured_llm.invoke([initial_reasoner_prompt]+state.messages)
+    # print('initial_reasoner type:',response.query_type, '\ninitial_reasoner response:',response.response, '\nmessages:',state.messages)
     if response.query_type.lower() == 'other':
         return {'messages':[AIMessage(response.response)], 'final_answer':response.response, 'query_type':response.query_type}
     else:
@@ -111,9 +115,9 @@ def route_based_on_query_type(state:AnalystState)->Literal['planner', END]:
     else:
         return 'planner'
 
-def route_based_on_scope(state:AnalystState)-> Literal[END,'query_generator']:
+def route_based_on_scope(state:AnalystState)-> Literal['sql_to_nl_converter','query_generator']:
     if not state.scope_ok:
-        return END
+        return 'sql_to_nl_converter'
     else:
         return 'query_generator'
 
@@ -161,17 +165,16 @@ def data_analyst_agent():
     analyst_workflow.add_conditional_edges('query_executor', route_based_on_execution)
     analyst_workflow.add_edge('sql_to_nl_converter', END)
 
-    memory_checkpointer = InMemorySaver()
-    data_analyst = analyst_workflow.compile(checkpointer=memory_checkpointer)
+    data_analyst = analyst_workflow.compile(checkpointer=checkpointer, debug=config.debug_mode)
 
     return data_analyst
 
 if __name__ == '__main__':
     my_agent = data_analyst_agent()
-    # img_bytes = my_agent.get_graph().draw_mermaid_png()
-    # with open('workflow.png', 'wb') as f:
-    #     f.write(img_bytes)
+    img_bytes = my_agent.get_graph().draw_mermaid_png()
+    with open('workflow.png', 'wb') as f:
+        f.write(img_bytes)
 
-    image_str = my_agent.get_graph().draw_ascii()
-    with open('workflow_ascii.txt', 'w') as f:
-        f.write(image_str)
+    # image_str = my_agent.get_graph().draw_ascii()
+    # with open('workflow_ascii.txt', 'w') as f:
+    #     f.write(image_str)

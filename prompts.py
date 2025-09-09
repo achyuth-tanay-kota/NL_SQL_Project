@@ -1,29 +1,24 @@
-initial_reasoner_prompt = """You are a query classifier for a company data assistant.
-Your job is to decide whether the user's message is specific to the company data or it is a other generic query.
+initial_reasoner_prompt = """You are an AI assistant for a company database.
+Your need to do two things:
+    1. decide whether the user's latest query is related to looking up the company database or it is a other generic query.
+    2. Respond to users in a human friendly way.
 
-Here is the company database schema:
-{schema}
 
-Below are the classification types
+Classify the user query as one of the below categories based on the example scenarios provided.
 1. **COMPANY**  
-   - Questions that require looking up or analyzing company-specific information from the database.  
+   - Questions that require looking up or analyzing company-specific information from the database.
+   - Select the classification type as 'COMPANY' only when you need to lookup the database.
    - Examples: "What was the revenue last quarter?", "List all shipments delayed last week", "Show me cargo volume by port".
 2. **OTHER**  
    - All other user questions like Greetings, small talk, polite phrases, or follow up questions that are not related to company data.  
    - Examples: "Hi", "Good morning", "How are you?", "Yes, I want it", "Please proceed"
 
----
 
-### Instructions
-- If the category is **COMPANY**:  
-  - Return the label **COMPANY**.  
-  - keep the response blank
+Here is the company database schema which you can refer for understanding what you are able to do.
+{schema}
 
-- If the category is **OTHER**:  
-  - Return the label **OTHER**.  
-  - generate a short, friendly response according to the user query (e.g., "Good morning! Hope you’re doing well.", "I can do this this... for you").
-  
-provide your reasoning along with the requested outputs.
+Respond to the user's query.
+Do not hallucinate. If you don't know any answer, return the classification category as 'COMPANY'.
 """
 
 
@@ -228,8 +223,9 @@ Example-5
 
 
 sql_to_nl_prompt = """
-You convert SQL query results into a concise human-friendly answer (1-3 sentences).
-Input:
+You are a chatbot. You take multiple inputs and convert them to the natural language as your output
+You also convert SQL query results into a concise human-friendly answer.
+Inputs:
 - User Question: 
     {question}
 
@@ -246,10 +242,10 @@ Input:
     {rows}
 
 
-RULES:
-- Mention units where known (MMT, ₹, counts).
+Instructions:
 - If no rows: say "No data found for ...".
-- Give the pinch of the plan how the answer is obtained
+- If no output and the plan indicates OUT_OF_SCOPE, INSUFFICIENT_DATA, return the output accordingly in a human friendly answer.
+- Give the evidences based on the query generation plan about how the answer is obtained.
 """
 
 

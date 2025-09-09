@@ -8,6 +8,8 @@ DB_PATH="data/business_data.db"
 SQL_ROW_LIMIT = 50
 
 forbidden_sql_keywords = ['insert', 'update', 'delete', 'drop', 'alter', 'attach', 'pragma', 'create']
+debug_mode = False
+checkpoint_db_path = "checkpoints.sqlite"
 
 API_HOST='localhost'
 API_PORT=8080

@@ -11,6 +11,7 @@ while user_input.lower() != 'end':
     url = f'http://{config.API_HOST}:{config.API_PORT}/invoke'
     response = requests.post(url, json=payload)
     print('AI:', response.json()[1])
-    print('='*20,'Reasoning', '='*20)
-    print('\n'.join([dic['content'] for dic in response.json()[0]]))
+    # print('='*20,'Reasoning', '='*20)
+    # print('\n'.join([dic['content'] for dic in response.json()[0]]))
     user_input = input('You:')
+
