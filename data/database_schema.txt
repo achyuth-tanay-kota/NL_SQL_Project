@@ -1,0 +1,266 @@
+
+CREATE TABLE dim_commodity (
+	commodity_id INTEGER, 
+	cargo_category TEXT, 
+	commodity_type TEXT, 
+	PRIMARY KEY (commodity_id), 
+	UNIQUE (cargo_category, commodity_type)
+)
+
+/*
+3 rows from dim_commodity table:
+commodity_id	cargo_category	commodity_type
+1	Crude	SPM
+2	Dry	Agri Products
+3	Dry	Coal
+*/
+
+
+CREATE TABLE dim_customer (
+	customer_id INTEGER, 
+	customer_name TEXT NOT NULL, 
+	PRIMARY KEY (customer_id), 
+	UNIQUE (customer_name)
+)
+
+/*
+3 rows from dim_customer table:
+customer_id	customer_name
+1	IOCL
+2	HMEL
+3	AEL
+*/
+
+
+CREATE TABLE dim_facility (
+	facility_id INTEGER, 
+	facility_name TEXT NOT NULL, 
+	unit_of_measure TEXT, 
+	PRIMARY KEY (facility_id), 
+	UNIQUE (facility_name, unit_of_measure)
+)
+
+/*
+3 rows from dim_facility table:
+facility_id	facility_name	unit_of_measure
+1	CMA	MMT
+2	AMCT	MMT
+3	Hazira	MMT
+*/
+
+
+CREATE TABLE dim_period (
+	period_id INTEGER, 
+	financial_year TEXT NOT NULL, 
+	quarter TEXT, 
+	period_type TEXT, 
+	PRIMARY KEY (period_id)
+)
+
+/*
+3 rows from dim_period table:
+period_id	financial_year	quarter	period_type
+1	2024-25	None	None
+2	2023-24	None	None
+3	2022-23	None	None
+*/
+
+
+CREATE TABLE dim_port (
+	port_id INTEGER, 
+	port_name TEXT NOT NULL, 
+	PRIMARY KEY (port_id), 
+	UNIQUE (port_name)
+)
+
+/*
+3 rows from dim_port table:
+port_id	port_name
+1	APSEZ
+2	Hazira
+3	Dahej
+*/
+
+
+CREATE TABLE fact_balance_sheet (
+	bs_id INTEGER, 
+	financial_period_id INTEGER, 
+	line_item TEXT, 
+	category TEXT, 
+	sub_category TEXT, 
+	sub_sub_category TEXT, 
+	value REAL, 
+	PRIMARY KEY (bs_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_balance_sheet table:
+bs_id	financial_period_id	line_item	category	sub_category	sub_sub_category	value
+1	1	Property,  Plant and Equipment	ASSETS	Non-Current Assets	None	62,394.43
+2	2	Property,  Plant and Equipment	ASSETS	Non-Current Assets	None	51,804.00
+3	3	Property,  Plant and Equipment	ASSETS	Non-Current Assets	None	48,414.00
+*/
+
+
+CREATE TABLE fact_cargo_volumes (
+	volume_id INTEGER, 
+	financial_period_id INTEGER, 
+	port_id INTEGER, 
+	commodity_id INTEGER, 
+	customer_id INTEGER, 
+	business_type TEXT, 
+	volume_value_mmt REAL, 
+	PRIMARY KEY (volume_id), 
+	FOREIGN KEY(customer_id) REFERENCES dim_customer (customer_id), 
+	FOREIGN KEY(commodity_id) REFERENCES dim_commodity (commodity_id), 
+	FOREIGN KEY(port_id) REFERENCES dim_port (port_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_cargo_volumes table:
+volume_id	financial_period_id	port_id	commodity_id	customer_id	business_type	volume_value_mmt
+1	1	26	1	1	Tied	6.739022476
+2	1	26	1	2	Tied	13.18110724
+3	1	4	1	1	Tied	0.0
+*/
+
+
+CREATE TABLE fact_cashflow (
+	cf_id INTEGER, 
+	financial_period_id INTEGER, 
+	item_description TEXT, 
+	cashflow_category TEXT, 
+	value REAL, 
+	PRIMARY KEY (cf_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_cashflow table:
+cf_id	financial_period_id	item_description	cashflow_category	value
+1	1	Profit before Tax	None	13029.62
+2	1	Adjustments for Share of loss/(profit) from Joint Ventures	Cash Flows from Operating Activities	-141.56
+3	1	Adjustments for Depreciation and Amortisation Expense	Cash Flows from Operating Activities	4378.93
+*/
+
+
+CREATE TABLE fact_consolidated_pnl (
+	pnl_id INTEGER, 
+	financial_period_id INTEGER, 
+	line_item TEXT, 
+	value REAL, 
+	PRIMARY KEY (pnl_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_consolidated_pnl table:
+pnl_id	financial_period_id	line_item	value
+1	1	Revenue from Operation	31,079.00
+2	2	Revenue from Operation	26,711.00
+3	3	Revenue from Operation	20,852.00
+*/
+
+
+CREATE TABLE fact_container_capacity (
+	capacity_id INTEGER, 
+	financial_period_id INTEGER, 
+	port_id INTEGER, 
+	facility_id INTEGER, 
+	business_type TEXT, 
+	capacity_value_mmt REAL, 
+	PRIMARY KEY (capacity_id), 
+	FOREIGN KEY(facility_id) REFERENCES dim_facility (facility_id), 
+	FOREIGN KEY(port_id) REFERENCES dim_port (port_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_container_capacity table:
+capacity_id	financial_period_id	port_id	facility_id	business_type	capacity_value_mmt
+1	1	26	1	Tied	19.91505
+2	2	26	1	Tied	19.646835
+3	3	26	1	Tied	17.2780324
+*/
+
+
+CREATE TABLE fact_quarterly_pnl (
+	q_pnl_id INTEGER, 
+	financial_period_id INTEGER, 
+	quarter TEXT, 
+	item_description TEXT, 
+	category TEXT, 
+	value REAL, 
+	PRIMARY KEY (q_pnl_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_quarterly_pnl table:
+q_pnl_id	financial_period_id	quarter	item_description	category	value
+1	4	Q1	Domestic Cargo (MMT)	Volumes	84.36
+2	4	Q1	International Cargo (MMT)	Volumes	0.0
+3	4	Q1	Total Cargo (MMT)	Volumes	84.36
+*/
+
+
+CREATE TABLE fact_roce_external (
+	roce_ext_id INTEGER, 
+	financial_period_id INTEGER, 
+	particular TEXT, 
+	value REAL, 
+	PRIMARY KEY (roce_ext_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_roce_external table:
+roce_ext_id	financial_period_id	particular	value
+1	1	EBIDTA	19024.64
+2	2	EBIDTA	15863.92
+3	3	EBIDTA	12833.45
+*/
+
+
+CREATE TABLE fact_roce_internal (
+	roce_int_id INTEGER, 
+	financial_period_id INTEGER, 
+	business_category TEXT, 
+	port_id INTEGER, 
+	line_item TEXT, 
+	value REAL, 
+	PRIMARY KEY (roce_int_id), 
+	FOREIGN KEY(port_id) REFERENCES dim_port (port_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_roce_internal table:
+roce_int_id	financial_period_id	business_category	port_id	line_item	value
+1	1	Domestic Port	1	EBIT	6151.0
+2	2	Domestic Port	1	EBIT	4919.0
+3	3	Domestic Port	1	EBIT	3979.0
+*/
+
+
+CREATE TABLE fact_roro (
+	roro_id INTEGER, 
+	financial_period_id INTEGER, 
+	port_id INTEGER, 
+	allocation_type TEXT, 
+	ratio_value REAL, 
+	number_of_cars INTEGER, 
+	PRIMARY KEY (roro_id), 
+	FOREIGN KEY(port_id) REFERENCES dim_port (port_id), 
+	FOREIGN KEY(financial_period_id) REFERENCES dim_period (period_id)
+)
+
+/*
+3 rows from fact_roro table:
+roro_id	financial_period_id	port_id	allocation_type	ratio_value	number_of_cars
+1	1	26	Tied	0.186901	186901
+2	2	26	Tied	0.18261	182610
+3	3	26	Tied	0.208516	208516
+*/
